@@ -99,6 +99,8 @@ export const api = {
     request<{ id: string; type: string; message: string; createdAt: string }[]>('GET', '/notifications'),
   markNotificationsRead: () =>
     request<void>('POST', '/notifications/read'),
+  sendNotification: (toUserId: string, message: string, type?: string) =>
+    request<void>('POST', '/notifications/send', { toUserId, message, type: type || 'loop' }),
 
   // Users
   listUsers: () => request<{ id: string; displayName: string; email: string; avatarUrl: string | null }[]>('GET', '/users'),

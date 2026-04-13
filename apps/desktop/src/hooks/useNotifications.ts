@@ -64,14 +64,39 @@ export function useNotifications() {
     return () => clearInterval(poll);
   }, []);
 
+  const [loopMessages, setLoopMessages] = useState<{ id: string; from: string; loopName: string; timestamp: string }[]>([]);
+
+  const addLoopMessage = (from: string, loopName: string) => {
+    setLoopMessages(prev => [...prev, { id: Date.now().toString(), from, loopName, timestamp: new Date().toISOString() }]);
+  };
+
+  const removeLoopMessage = (id: string) => {
+    setLoopMessages(prev => prev.filter(m => m.id !== id));
+  };
+
+  // Listen for loop-sent events
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.from && detail?.loopName) {
+        addLoopMessage(detail.from, detail.loopName);
+      }
+    };
+    window.addEventListener('ghost-loop-sent', handler);
+    return () => window.removeEventListener('ghost-loop-sent', handler);
+  }, []);
+
   return {
     invitations,
     notifications,
+    loopMessages,
+    addLoopMessage,
+    removeLoopMessage,
     fetchInvitations,
     fetchNotifications,
     acceptInvite,
     declineInvite,
     markAllRead,
-    totalCount: invitations.length + notifications.length,
+    totalCount: invitations.length + notifications.length + loopMessages.length,
   };
 }

@@ -1,10 +1,137 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Reorder } from 'framer-motion';
 import type { SamplePack } from '@ghost/types';
 import { api } from '../../lib/api';
 import { useAudioStore } from '../../stores/audioStore';
 
 export type { SamplePack };
+
+function MiniWaveform({ name }: { name: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    let seed = 0;
+    for (let i = 0; i < name.length; i++) seed = ((seed << 5) - seed + name.charCodeAt(i)) | 0;
+    for (let x = 0; x < w; x++) {
+      seed = (seed * 16807 + 12345) & 0x7fffffff;
+      const amp = (seed % 100) / 100;
+      const barH = amp * h * 0.8;
+      ctx.fillStyle = `rgba(124, 58, 237, ${0.3 + amp * 0.4})`;
+      ctx.fillRect(x, (h - barH) / 2, 1, barH);
+    }
+  }, [name]);
+  return <canvas ref={canvasRef} width={36} height={18} className="shrink-0 rounded-sm" style={{ background: 'rgba(10,4,18,0.8)' }} />;
+}
+
+function LoopDropBox() {
+  const [dragOver, setDragOver] = useState(false);
+  const [loops, setLoops] = useState<{ name: string; data: Float32Array | null }[]>([]);
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const files = Array.from(e.dataTransfer.files).filter((f) =>
+      f.type.startsWith('audio/') || f.name.match(/\.(wav|mp3|flac|aiff|ogg|m4a|aac)$/i)
+    );
+    for (const file of files) {
+      const loopName = file.name.replace(/\.[^.]+$/, '');
+      // Decode audio for waveform
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const audioCtx = new AudioContext();
+        const buffer = await audioCtx.decodeAudioData(arrayBuffer);
+        const data = buffer.getChannelData(0);
+        audioCtx.close();
+        setLoops(prev => [...prev, { name: loopName, data }]);
+      } catch {
+        setLoops(prev => [...prev, { name: loopName, data: null }]);
+      }
+    }
+  };
+
+  return (
+    <div className="mx-1 my-1.5">
+      <div
+        className={`relative rounded-lg overflow-hidden transition-all ${dragOver ? 'ring-1 ring-purple-400/50' : ''}`}
+        style={{ border: '1px dashed rgba(124,58,237,0.3)', background: 'rgba(10,4,18,0.6)' }}
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={handleDrop}
+      >
+        <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ background: 'linear-gradient(90deg, #00FFC8, #7C3AED, #EC4899, #F59E0B, #00B4D8, #00FFC8)', backgroundSize: '200% 100%', animation: 'shimmer 3s linear infinite' }} />
+        <div className="relative flex items-center gap-2 px-3 py-2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-60"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+          <span className="text-[11px] text-white/50 font-medium">Drag loops here</span>
+        </div>
+        <style>{`@keyframes shimmer { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }`}</style>
+      </div>
+      {loops.length > 0 && (
+        <div className="mt-1 space-y-0.5">
+          {loops.map((loop, i) => (
+            <LoopItemRow key={i} name={loop.name} data={loop.data} onRemove={() => setLoops(prev => prev.filter((_, idx) => idx !== i))} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LoopItemRow({ name, data, onRemove }: { name: string; data: Float32Array | null; onRemove: () => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    if (data) {
+      const step = Math.max(1, Math.floor(data.length / w));
+      for (let x = 0; x < w; x++) {
+        let max = 0;
+        for (let j = 0; j < step; j++) {
+          const idx = x * step + j;
+          if (idx < data.length) max = Math.max(max, Math.abs(data[idx]));
+        }
+        const barH = max * h * 0.9;
+        ctx.fillStyle = `rgba(0, 255, 200, ${0.3 + max * 0.5})`;
+        ctx.fillRect(x, (h - barH) / 2, 1, barH);
+      }
+    } else {
+      // Fallback: random waveform from name
+      let seed = 0;
+      for (let i = 0; i < name.length; i++) seed = ((seed << 5) - seed + name.charCodeAt(i)) | 0;
+      for (let x = 0; x < w; x++) {
+        seed = (seed * 16807 + 12345) & 0x7fffffff;
+        const amp = (seed % 100) / 100;
+        ctx.fillStyle = `rgba(0, 255, 200, ${0.2 + amp * 0.3})`;
+        ctx.fillRect(x, (h - amp * h * 0.7) / 2, 1, amp * h * 0.7);
+      }
+    }
+  }, [name, data]);
+
+  return (
+    <div
+      className="group flex items-center gap-1.5 px-1.5 py-1 rounded-md hover:bg-white/[0.04] transition-colors cursor-grab active:cursor-grabbing"
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'loop', name }));
+        e.dataTransfer.effectAllowed = 'copy';
+      }}
+    >
+      <canvas ref={canvasRef} width={40} height={20} className="shrink-0 rounded-sm" style={{ background: 'rgba(10,4,18,0.6)', border: '1px solid rgba(255,255,255,0.06)' }} />
+      <span className="text-[10px] text-white/60 truncate flex-1">{name}</span>
+      <button onClick={onRemove} className="opacity-0 group-hover:opacity-100 text-white/30 hover:text-red-400 transition-all shrink-0">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+      </button>
+    </div>
+  );
+}
 
 function ProjectListSidebar({
   projects,
@@ -202,9 +329,7 @@ function ProjectListSidebar({
               <button onClick={onCreatePack} className="w-full flex items-center gap-2 px-2 py-1.5 text-[13px] text-purple-400 hover:text-purple-300 hover:bg-white/[0.04] rounded-md transition-colors">
                 <span className="text-[15px]">+</span> New Samples
               </button>
-              {samplePacks.length === 0 && (
-                <p className="text-[11px] text-ghost-text-muted italic px-2 py-1">No packs yet</p>
-              )}
+              <LoopDropBox />
               {samplePacks.map((sp) => (
                 <div
                   key={sp.id}

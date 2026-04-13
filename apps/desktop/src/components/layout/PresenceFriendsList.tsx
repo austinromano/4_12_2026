@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, Reorder } from 'framer-motion';
 import Avatar from '../common/Avatar';
 import { type OnlineUser } from '../../lib/socket';
+import { api } from '../../lib/api';
 
 function PresenceFriendsList({ friends, onlineActivity, selectProject, onRemoveFriend }: { friends: any[]; onlineActivity: Map<string, OnlineUser>; selectProject: (id: string) => void; onRemoveFriend?: (id: string) => void }) {
   const sourceFriends = friends;
@@ -46,7 +47,23 @@ function PresenceFriendsList({ friends, onlineActivity, selectProject, onRemoveF
             whileTap={{ scale: 0.95 }}
             whileDrag={{ scale: 1.15, zIndex: 50 }}
           >
-            <div onClick={() => { if (projectId) selectProject(projectId); }}>
+            <div
+              onClick={() => { if (projectId) selectProject(projectId); }}
+              onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.transform = 'scale(1.2)'; e.currentTarget.style.filter = 'drop-shadow(0 0 8px rgba(0,255,200,0.5))'; }}
+              onDragLeave={(e) => { e.currentTarget.style.transform = ''; e.currentTarget.style.filter = ''; }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.currentTarget.style.transform = '';
+                e.currentTarget.style.filter = '';
+                try {
+                  const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                  if (data.type === 'loop') {
+                    // Send notification to the friend's inbox
+                    api.sendNotification(f.id, `🎵 Loop received: ${data.name}`, 'loop').catch(() => {});
+                  }
+                } catch {}
+              }}
+            >
               <div className="rounded-2xl p-[2px] transition-all overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.3)] hover:rounded-xl hover:shadow-[0_0_12px_rgba(124,58,237,0.4),0_2px_8px_rgba(0,0,0,0.3)]"
                 style={{ background: 'linear-gradient(180deg, #7C3AED 0%, #581C87 100%)' }}
               >

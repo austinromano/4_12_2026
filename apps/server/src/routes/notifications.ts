@@ -21,6 +21,27 @@ notificationRoutes.get('/', async (c) => {
   return c.json({ success: true, data: results });
 });
 
+// Send a notification to another user (e.g. loop sent)
+notificationRoutes.post('/send', async (c) => {
+  const user = c.get('user') as AuthUser;
+  const { toUserId, message, type } = await c.req.json();
+
+  if (!toUserId || !message) {
+    return c.json({ success: false, error: 'toUserId and message required' }, 400);
+  }
+
+  await db.insert(notifications).values({
+    id: crypto.randomUUID(),
+    userId: toUserId,
+    type: type || 'loop',
+    message,
+    read: false,
+    createdAt: new Date().toISOString(),
+  }).run();
+
+  return c.json({ success: true });
+});
+
 // Mark all as read
 notificationRoutes.post('/read', async (c) => {
   const user = c.get('user') as AuthUser;

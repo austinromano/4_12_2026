@@ -23,6 +23,7 @@ import ProjectListSidebar from '../layout/ProjectListSidebar';
 import PresenceFriendsList from '../layout/PresenceFriendsList';
 import SettingsPopup from '../common/SettingsPopup';
 import NotificationPopup, { BellIcon } from '../common/NotificationPopup';
+import InboxPopup from '../common/InboxPopup';
 import InviteModal from '../common/InviteModal';
 import VideoGrid from '../video/VideoGrid';
 import StemRow from '../tracks/StemRow';
@@ -107,126 +108,80 @@ function SamplePackContentView({
 
   return (
     <div className="flex-1 flex flex-col min-w-0">
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2">
-        {/* Pack info bar */}
-        <div className="mb-4">
-          <div className="flex items-center gap-3 bg-ghost-surface/80 rounded-lg border border-ghost-border/30 px-5 py-3 min-w-0">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5865F2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-              <path d="M9 18V5l12-2v13" />
-              <circle cx="6" cy="18" r="3" />
-              <circle cx="18" cy="16" r="3" />
-            </svg>
-            <input
-              className="text-[15px] font-bold text-white bg-transparent border-none outline-none hover:bg-ghost-surface-hover px-2 py-1 rounded-lg transition-colors min-w-[60px] flex-1"
-              value={pack.name}
-              onChange={(e) => onRenamePack(pack.id, e.target.value)}
-            />
-            <span className="text-[12px] text-ghost-text-muted shrink-0">{items.length} sample{items.length !== 1 ? 's' : ''}</span>
-            {pack.updatedAt && (
-              <>
-                <div className="w-px h-4 bg-ghost-border shrink-0" />
-                <span className="text-[12px] text-ghost-text-muted flex items-center gap-1.5 shrink-0 whitespace-nowrap">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-60"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-                  <span className="text-ghost-green font-medium">
-                    {new Date(pack.updatedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
-                  </span>
-                </span>
-              </>
-            )}
-            <div className="relative" ref={packMenuRef}>
-              <button onClick={() => setShowPackMenu(!showPackMenu)} className="w-6 h-6 flex items-center justify-center rounded text-ghost-text-muted hover:text-white hover:bg-ghost-surface-hover transition-colors">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="12" cy="19" r="2" /></svg>
+      {/* Project info bar — same style as project view */}
+      <div className="flex items-center gap-3 shrink-0 rounded-2xl mb-1 pl-6 pr-3 min-w-0 h-[50px] glass glass-glow">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00FFC8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-60"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>
+        <input className="text-[15px] font-bold text-white bg-transparent border border-transparent hover:bg-white/[0.04] hover:border-white/[0.08] focus:bg-white/[0.04] focus:border-ghost-green/30 outline-none px-2 py-0 rounded-md transition-colors min-w-[60px] flex-1 cursor-text" value={pack.name} onChange={(e) => onRenamePack(pack.id, e.target.value)} />
+        {pack.updatedAt && (<><div className="w-px h-5 bg-white/10 shrink-0" /><span className="text-[14px] text-ghost-green font-semibold shrink-0 whitespace-nowrap">{new Date(pack.updatedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span></>)}
+        <div className="relative" ref={packMenuRef}>
+          <button onClick={() => setShowPackMenu(!showPackMenu)} className="w-9 h-9 flex items-center justify-center rounded-md text-ghost-text-muted hover:text-white hover:bg-white/[0.1] transition-colors cursor-pointer">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.5" /><circle cx="12" cy="12" r="2.5" /><circle cx="12" cy="19" r="2.5" /></svg>
+          </button>
+          {showPackMenu && (
+            <div className="absolute right-0 top-full mt-1 w-40 bg-[#111214] rounded-lg shadow-popup animate-popup z-50 border border-white/5 py-1">
+              <button onClick={() => { if (confirm('Delete this sample pack?')) onDeletePack(pack.id); setShowPackMenu(false); }} className="w-full px-3 py-1.5 text-[13px] text-left text-ghost-error-red hover:bg-ghost-error-red/10 transition-colors flex items-center gap-2">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+                Delete Pack
               </button>
-              {showPackMenu && (
-                <div className="absolute right-0 top-full mt-1 w-40 bg-[#111214] rounded-lg shadow-popup animate-popup z-50 border border-white/5 py-1">
-                  <button onClick={() => { if (confirm('Delete this sample pack? This cannot be undone.')) onDeletePack(pack.id); setShowPackMenu(false); }} className="w-full px-3 py-1.5 text-[13px] text-left text-ghost-error-red hover:bg-ghost-error-red/10 transition-colors flex items-center gap-2">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
-                    Delete Pack
-                  </button>
-                </div>
-              )}
             </div>
-          </div>
+          )}
         </div>
+      </div>
 
-        {/* Collaborators bar */}
+      <div className="flex-1 flex flex-col min-w-0 glass glass-glow rounded-2xl overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 overflow-y-auto p-4">
+        {/* Collaborators bar — same as project */}
         {(() => {
           const { user } = useAuthStore.getState();
           const displayMembers = members.length > 0 ? members : user ? [{ userId: user.id, displayName: user.displayName, role: 'owner', avatarUrl: user.avatarUrl }] : [];
           return displayMembers.length > 0 && (
-            <div className="mb-4">
-              <div className="flex items-center gap-4 bg-ghost-surface/80 rounded-lg border border-ghost-border/30 px-5 py-2.5">
-                <div className="flex items-center -space-x-2.5">
-                  {[...displayMembers].sort((a: any, b: any) => (a.role === 'owner' ? -1 : b.role === 'owner' ? 1 : 0)).map((m: any) => (
-                    <div key={m.userId} className="relative group cursor-pointer transition-transform hover:scale-110 hover:z-10" title={m.displayName} style={{ border: '3px solid #0F0F18', borderRadius: '50%' }}>
-                      <Avatar name={m.displayName || '?'} src={m.avatarUrl} size="md" colour={m.role === 'owner' ? '#F0B232' : '#23A559'} />
-                      <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full" style={{ background: '#23A559', border: '2.5px solid #0F0F18' }} />
-                    </div>
+            <div className="mb-6">
+            <div className="flex items-center gap-5 glass-subtle px-6 h-[76px] rounded-xl">
+              <div className="flex items-center -space-x-2">
+                {[...displayMembers].sort((a: any, b: any) => (a.role === 'owner' ? -1 : b.role === 'owner' ? 1 : 0)).map((m: any) => (
+                  <div key={m.userId} className="relative" style={{ border: '2.5px solid #0A0A0F', borderRadius: '50%' }}><Avatar name={m.displayName || '?'} src={m.avatarUrl} size="lg" colour={m.role === 'owner' ? '#F0B232' : '#23A559'} /></div>
+                ))}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {[...displayMembers].filter((m: any) => m.role === 'owner').map((m: any) => (
+                    <span key={m.userId} className="flex items-center gap-1.5"><span className="text-[17px] font-bold text-ghost-text-primary">{m.displayName}</span><span className="text-[12px] font-bold uppercase tracking-wider text-white bg-[#5865F2] px-2.5 py-0.5 rounded-md">HOST</span></span>
                   ))}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1 flex-wrap">
-                    {[...displayMembers].sort((a: any, b: any) => (a.role === 'owner' ? -1 : b.role === 'owner' ? 1 : 0)).map((m: any, i: number) => (
-                      <span key={m.userId} className="flex items-center gap-1">
-                        <span className={`text-[14px] ${m.role === 'owner' ? 'font-bold text-ghost-host-gold' : 'font-medium text-ghost-text-primary'}`}>{m.displayName}</span>
-                        {m.role === 'owner' && <span className="text-[10px] font-bold uppercase tracking-wider text-ghost-host-gold/70 bg-ghost-host-gold/10 px-1.5 py-px rounded">host</span>}
-                        {i < displayMembers.length - 1 && <span className="text-ghost-text-muted/40 mx-0.5">/</span>}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#23A559' }} />
-                    <span className="text-[14px] text-ghost-text-muted">{displayMembers.length} collaborator{displayMembers.length !== 1 ? 's' : ''} online</span>
-                  </div>
-                </div>
-                <motion.button onClick={onInvite} className="w-[120px] h-11 rounded-full text-white text-[14px] font-semibold flex items-center justify-center gap-2 transition-all shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.15)] hover:shadow-[0_0_20px_rgba(124,58,237,0.4),0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.2)] shrink-0" style={{ background: 'linear-gradient(180deg, #7C3AED 0%, #581C87 100%)' }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" /><line x1="23" y1="11" x2="17" y2="11" /></svg>
-                  Invite
-                </motion.button>
+                <div className="flex items-center gap-1.5 mt-0.5"><span className="text-[15px] text-ghost-text-muted">{displayMembers.length} collaborator{displayMembers.length !== 1 ? 's' : ''} online</span></div>
               </div>
+              <button onClick={onInvite} className="px-5 py-2 rounded-full text-white text-[14px] font-semibold flex items-center gap-2 shrink-0" style={{ background: '#7C3AED' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" /><line x1="23" y1="11" x2="17" y2="11" /></svg>Invite
+              </button>
+            </div>
             </div>
           );
         })()}
 
-        {/* Samples drop zone */}
-        <div
-          onDragOver={(e) => { e.preventDefault(); setPackDragOver(true); }}
-          onDragLeave={() => setPackDragOver(false)}
-          onDrop={handlePackDrop}
-          className={`rounded-xl overflow-hidden transition-all ${packDragOver ? 'bg-ghost-green/[0.04] border border-ghost-green/30 shadow-glow-green' : 'glass-subtle'}`}
-        >
-          <div className="flex items-center gap-3 px-4 py-2.5">
-            <button className="w-7 h-7 rounded-full bg-ghost-surface-hover/60 flex items-center justify-center text-ghost-text-muted hover:text-ghost-green transition-colors">
-              <svg width="9" height="11" viewBox="0 0 10 12" fill="currentColor"><polygon points="0,0 10,6 0,12" /></svg>
-            </button>
-            <span className="text-[11px] font-semibold text-ghost-text-muted/80 uppercase tracking-[0.1em]">Samples</span>
-            <div className="flex-1" />
-          </div>
-          <div className={`h-[72px] relative overflow-hidden transition-colors ${packDragOver ? 'bg-ghost-green/5' : 'bg-ghost-bg/50'}`}>
-            <div className="absolute inset-0 opacity-10 pointer-events-none"><Waveform seed="samplepack-demo-placeholder" height={72} /></div>
-            <div className="absolute inset-0 flex items-center gap-3 pl-8 pr-5">
-              {packUploading ? (
-                <span className="text-[13px] text-ghost-green animate-pulse">{packStatus}</span>
-              ) : packStatus ? (
-                <span className="text-[13px] text-ghost-green">{packStatus}</span>
-              ) : (
-                <>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={packDragOver ? '#00FFC8' : 'rgba(255,255,255,0.4)'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
-                  <span className={`text-[13px] font-bold uppercase tracking-wide ml-2 ${packDragOver ? 'text-ghost-green' : 'text-purple-300'}`} style={{ textShadow: '0 2px 6px rgba(0,0,0,0.6), 0 0px 2px rgba(0,0,0,0.4)' }}>Drag audio files here</span>
-                  <div className="flex-1" />
-                  <button onClick={handlePackBrowse} className="px-3 py-1.5 text-[11px] font-semibold bg-white/5 border border-white/10 rounded-lg text-ghost-text-secondary hover:text-white hover:bg-white/10 hover:border-white/20 transition-all shrink-0">+ Add File</button>
-                </>
-              )}
-            </div>
-          </div>
+        {/* Download Stems button — same style */}
+        <div className="flex items-center gap-1 mb-3">
+          <button onClick={handlePackBrowse} className="flex items-center gap-2 px-5 py-2 rounded-lg text-[14px] font-bold tracking-wide transition-all hover:brightness-110 active:scale-[0.98]" style={{ background: '#7C3AED', color: '#fff' }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+            Download Stems
+          </button>
+          <div className="flex-1" />
         </div>
 
-        {/* Sample rows */}
-        <div className="space-y-2 mt-2">
-          {items.map((sample: any) => (
-            <StemRow key={sample.id} trackId={sample.id} name={sample.name} type="audio" fileId={sample.fileId} projectId={pack.id} onDelete={() => onRemoveSample(pack.id, sample.id)} onRename={() => {}} />
-          ))}
-        </div>
+        {/* Drop zone — same as project */}
+        <ArrangementDropZone projectId={pack.id} onFilesAdded={() => onRefresh(pack.id)}>
+          <FullMixDropZone projectId={pack.id} onFilesAdded={() => onRefresh(pack.id)} compact={true} />
+          <DraggableTrackList
+            tracks={items.map((s: any) => ({ ...s, type: 'audio' }))}
+            selectedProjectId={pack.id}
+            deleteTrack={(pid: string, tid: string) => onRemoveSample(pid, tid)}
+            updateTrack={() => {}}
+            trackZoom="half"
+            fetchProject={() => onRefresh(pack.id)}
+          />
+        </ArrangementDropZone>
+      </div>
+      </div>
       </div>
     </div>
   );
@@ -260,6 +215,7 @@ export default function PluginLayout() {
   const [headerSpeaking, setHeaderSpeaking] = useState(false);
   const [onlineActivity, setOnlineActivity] = useState<Map<string, OnlineUser>>(new Map());
   const [showNotifs, setShowNotifs] = useState(false);
+  const [showInbox, setShowInbox] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [showFriendSearch, setShowFriendSearch] = useState(false);
   const [friendSearchQuery, setFriendSearchQuery] = useState('');
@@ -314,7 +270,7 @@ export default function PluginLayout() {
     const pollTimer = setInterval(() => {
       fetchProject(selectedProjectId);
     }, 5000);
-    const handleRefresh = () => fetchProject(selectedProjectId);
+    const handleRefresh = () => { fetchProject(selectedProjectId); fetchProjects(); };
     window.addEventListener('ghost-refresh-project', handleRefresh);
     return () => { clearInterval(pollTimer); window.removeEventListener('ghost-refresh-project', handleRefresh); };
   }, [selectedProjectId]);
@@ -516,9 +472,9 @@ export default function PluginLayout() {
 
         {/* Main content */}
         <div ref={cursorContainerRef} className="relative flex-1 flex flex-col min-w-0 overflow-hidden">
-          <RemoteCursors />
           {showSettings && (<><div className="fixed inset-0 z-40" onClick={() => setShowSettings(false)} /><SettingsPopup user={user} onSignOut={() => { setShowSettings(false); logout(); }} onDeleteAccount={async () => { setShowSettings(false); await useAuthStore.getState().deleteAccount(); }} onClose={() => setShowSettings(false)} onProfile={() => { setShowSocial(true); setSelectedProjectId(null); samplePackState.setSelectedPackId(null); }} /></>)}
-          {showNotifs && (<><div className="fixed inset-0 z-40" onClick={() => setShowNotifs(false)} /><NotificationPopup invitations={notifs.invitations} onAccept={acceptInvite} onDecline={declineInvite} notifications={notifs.notifications} onMarkRead={notifs.markAllRead} /></>)}
+          {showNotifs && (<><div className="fixed inset-0 z-40" onClick={() => setShowNotifs(false)} /><NotificationPopup invitations={notifs.invitations} onAccept={acceptInvite} onDecline={declineInvite} notifications={notifs.notifications.filter((n: any) => n.type !== 'loop' && !n.message.includes('🎵'))} onMarkRead={notifs.markAllRead} loopMessages={notifs.loopMessages} onRemoveLoop={notifs.removeLoopMessage} /></>)}
+          {showInbox && (<><div className="fixed inset-0 z-40" onClick={() => setShowInbox(false)} /><InboxPopup loopNotifications={notifs.notifications.filter((n: any) => n.type === 'loop' || n.message.includes('🎵'))} onMarkRead={notifs.markAllRead} onRefresh={notifs.fetchNotifications} /></>)}
           {showInvite && selectedProjectId && <InviteModal open={showInvite} onClose={() => setShowInvite(false)} projectId={selectedProjectId} />}
           {showInvite && samplePackState.selectedPackId && !selectedProjectId && <InviteModal open={showInvite} onClose={() => setShowInvite(false)} projectId={samplePackState.selectedPackId!} />}
 
@@ -677,8 +633,18 @@ export default function PluginLayout() {
                     <>
                     <div className="w-full shrink-0 flex items-center justify-evenly glass glass-glow rounded-2xl h-[50px]">
                       <button onClick={() => setVideoGridHidden(!videoGridHidden)} className={`transition-colors ${!videoGridHidden ? 'text-ghost-green' : 'text-white/40 hover:text-ghost-green'}`} title={videoGridHidden ? 'Show Video Grid' : 'Hide Video Grid'}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" /><line x1="23" y1="11" x2="17" y2="11" /></svg></button>
-                      <button onClick={() => { setShowNotifs(!showNotifs); setShowSettings(false); if (!showNotifs && notifs.notifications.length > 0) notifs.markAllRead(); }} className="text-white/40 hover:text-ghost-green transition-colors"><BellIcon count={notifs.totalCount} /></button>
-                      <button className="text-white/40 hover:text-ghost-green transition-colors" title="Inbox"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12" /><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /></svg></button>
+                      <button onClick={() => { setShowNotifs(!showNotifs); setShowSettings(false); }} className="text-white/40 hover:text-ghost-green transition-colors"><BellIcon count={notifs.invitations.length + notifs.notifications.filter((n: any) => n.type !== 'loop' && !n.message.includes('🎵')).length} /></button>
+                      <button onClick={() => { setShowInbox(!showInbox); setShowNotifs(false); setShowSettings(false); }} className="text-white/40 hover:text-ghost-green transition-colors relative" title="Inbox">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12" /><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /></svg>
+                        {(() => {
+                          const loopCount = notifs.notifications.filter((n: any) => n.type === 'loop' || n.message.includes('🎵')).length + (notifs.loopMessages?.length || 0);
+                          return loopCount > 0 ? (
+                            <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-ghost-green text-black text-[9px] font-bold rounded-full flex items-center justify-center">
+                              {loopCount}
+                            </span>
+                          ) : null;
+                        })()}
+                      </button>
                       <button onClick={() => { setShowSettings(!showSettings); setShowNotifs(false); }} className="shrink-0 rounded-full outline-none focus:outline-none"><Avatar name={user?.displayName || '?'} src={user?.avatarUrl} size="sm" /></button>
                     </div>
                     {!videoGridHidden && <div className="w-full shrink-0"><VideoGrid members={members} userId={user?.id} onAddFriend={() => { setShowFriendSearch(true); setFriendSearchQuery(''); setTimeout(() => { friendSearchInputRef.current?.focus(); }, 100); }} /></div>}
@@ -689,7 +655,7 @@ export default function PluginLayout() {
               </>
             ) : samplePackState.selectedPackId && samplePackState.selectedPack ? (
               <>
-                <SamplePackContentView pack={samplePackState.selectedPack} onRenamePack={handleRenamePack} onDeletePack={handleDeletePack} onRemoveSample={handleRemoveSampleFromPack} onRefresh={samplePackState.fetchDetail} members={members} onInvite={() => setShowInvite(true)} />
+                <SamplePackContentView pack={samplePackState.selectedPack} onRenamePack={handleRenamePack} onDeletePack={handleDeletePack} onRemoveSample={handleRemoveSampleFromPack} onRefresh={samplePackState.fetchDetail} members={[]} onInvite={() => setShowInvite(true)} />
                 <div className={`relative flex flex-col min-h-0 h-full gap-2 shrink-0 ${chatCollapsed ? 'w-0 overflow-hidden' : 'w-[280px] overflow-hidden'}`}>
                   <button onClick={() => setChatCollapsed(!chatCollapsed)} className="absolute -left-5 top-1/2 -translate-y-1/2 z-10 w-5 h-10 flex items-center justify-center rounded-full glass hover:bg-white/[0.08] transition-colors" title={chatCollapsed ? 'Show chat' : 'Hide chat'}>
                     <svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-ghost-text-muted">{chatCollapsed ? <polyline points="2,1 6,6 2,11" /> : <polyline points="6,1 2,6 6,11" />}</svg>
