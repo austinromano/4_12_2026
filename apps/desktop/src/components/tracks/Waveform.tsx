@@ -108,16 +108,10 @@ export default memo(function Waveform({
       peaks[x] = max;
     }
 
-    // Derive a stable hue per track from the seed so each stem has its own color
-    let seedHash = 0;
-    for (let i = 0; i < seed.length; i++) seedHash = ((seedHash << 5) - seedHash + seed.charCodeAt(i)) | 0;
-    const baseHue = Math.abs(seedHash) % 360;
+    // Single theme color for all waveforms (ghost purple)
+    ctx.fillStyle = '#8B5CF6';
 
     for (let x = 0; x < w; x++) {
-      const t = x / w;
-      // Gentle hue shift of ~20° across the width, constant saturation/lightness
-      const hue = (baseHue + t * 20) % 360;
-      ctx.fillStyle = `hsl(${hue}, 70%, 60%)`;
 
       const peakH = peaks[x] * mid * 0.84;
       if (peakH > 0.5) {
